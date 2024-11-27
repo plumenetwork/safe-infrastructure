@@ -137,6 +137,8 @@ services:
       - nginx-shared-cfg:/nginx
     env_file:
       - container_env_files/cfg.env
+    environment:
+      - CGW_AUTH_TOKEN=${AUTH_TOKEN}
     depends_on:
       cfg-db:
         condition: service_healthy
@@ -150,6 +152,10 @@ services:
     image: safeglobal/safe-client-gateway-nest:${CGW_VERSION}
     env_file:
       - container_env_files/cgw.env
+    environment:
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_SECRET=${JWT_SECRET}
+      - AUTH_TOKEN=${AUTH_TOKEN}
     depends_on:
       cgw-redis:
         condition: service_healthy
@@ -176,6 +182,9 @@ services:
     image: safeglobal/safe-events-service:${EVENTS_VERSION}
     env_file:
       - container_env_files/events.env
+    environment:
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
       events-db:
         condition: service_healthy
