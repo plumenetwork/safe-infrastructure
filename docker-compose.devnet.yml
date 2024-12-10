@@ -41,6 +41,12 @@ services:
 
   txs-db:
     image: postgres:14-alpine
+    ports:
+      - target: 5432
+        published: 5433
+        host_ip: 0.0.0.0
+        protocol: tcp
+        mode: host
     command: -c 'max_connections=250'
     environment:
       POSTGRES_PASSWORD: postgres
@@ -58,6 +64,12 @@ services:
 
   events-db:
     image: postgres:14-alpine
+    ports:
+      - target: 5432
+        published: 5434
+        host_ip: 0.0.0.0
+        protocol: tcp
+        mode: host
     environment:
       POSTGRES_PASSWORD: postgres
     volumes:
@@ -149,7 +161,7 @@ services:
     <<: *redishealthcheck
 
   cgw-web:
-    image: safeglobal/safe-client-gateway-nest:${CGW_VERSION}
+    image: alex-test-updated-nest
     env_file:
       - container_env_files/cgw.env
     environment:
@@ -161,7 +173,7 @@ services:
         condition: service_healthy
 
   ui:
-    image: safeglobal/safe-wallet-web:${UI_VERSION}
+    image: alex-test-updated-web
     env_file:
       - container_env_files/ui.env
     depends_on:
