@@ -92,11 +92,6 @@ services:
       - ETHEREUM_NODE_URL=${RPC_NODE_URL}
       - RUN_MIGRATIONS=1
       - WORKER_QUEUES=default,indexing
-    depends_on:
-      txs-db:
-        condition: service_healthy
-      txs-redis:
-        condition: service_healthy
     command: docker/web/celery/worker/run.sh
     <<: *celeryhealthcheck
 
@@ -105,18 +100,12 @@ services:
     environment:
       - WORKER_QUEUES=contracts,tokens
       - ETHEREUM_NODE_URL=${RPC_NODE_URL}
-    depends_on:
-      txs-worker-indexer:
-        condition: service_healthy
 
   txs-worker-notifications-webhooks:
     <<: *txs-worker
     environment:
       - WORKER_QUEUES=notifications,webhooks
       - ETHEREUM_NODE_URL=${RPC_NODE_URL}
-    depends_on:
-      txs-worker-indexer:
-        condition: service_healthy
 
   txs-web:
     image: safeglobal/safe-transaction-service:${TXS_VERSION}
@@ -124,9 +113,6 @@ services:
       - container_env_files/txs.env
     environment:
       - ETHEREUM_NODE_URL=${RPC_NODE_URL}
-    depends_on:
-      txs-worker-indexer:
-        condition: service_healthy
     working_dir: /app
     volumes:
       - nginx-shared-txs:/nginx

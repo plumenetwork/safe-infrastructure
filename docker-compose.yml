@@ -1,0 +1,229 @@
+
+volumes:
+  devnet-nginx-shared-txs:
+  mainnet-nginx-shared-txs:
+
+services:
+  # Common nginx and database
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "${REVERSE_PROXY_PORT}:8000"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - devnet-nginx-shared-txs:/devnet-nginx-txs
+      - mainnet-nginx-shared-txs:/mainnet-nginx-txs
+      - nginx-shared-cfg:/nginx-cfg
+    depends_on:
+      - devnet-txs-web
+      - mainnet-txs-web
+      - cfg-web
+      - cgw-web
+      - events-web
+
+  #####
+  # Devnet
+  #####
+
+  # Safe Transaction Service
+  devnet-txs-db:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-db
+
+  devnet-txs-redis:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-redis
+
+  devnet-txs-rabbitmq:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-rabbitmq
+
+  devnet-txs-worker-indexer:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-worker-indexer
+    environment:
+      - ETHEREUM_NODE_URL=${DEVNET_RPC_NODE_URL}
+    depends_on:
+      devnet-txs-db:
+        condition: service_healthy
+      devnet-txs-redis:
+        condition: service_healthy
+
+  devnet-txs-worker-contracts-tokens:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-worker-contracts-tokens
+    environment:
+      - ETHEREUM_NODE_URL=${DEVNET_RPC_NODE_URL}
+    depends_on:
+      devnet-txs-worker-indexer:
+        condition: service_healthy
+
+  devnet-txs-worker-notifications-webhooks:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-worker-notifications-webhooks
+    environment:
+      - ETHEREUM_NODE_URL=${DEVNET_RPC_NODE_URL}
+    depends_on:
+      devnet-txs-worker-indexer:
+        condition: service_healthy
+
+  devnet-txs-web:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-web
+    environment:
+      - ETHEREUM_NODE_URL=${DEVNET_RPC_NODE_URL}
+    volumes:
+      - devnet-nginx-shared-txs:/nginx
+    depends_on:
+      devnet-txs-worker-indexer:
+        condition: service_healthy
+
+  devnet-txs-scheduler:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-scheduler
+    depends_on:
+      devnet-txs-db:
+        condition: service_healthy
+      devnet-txs-redis:
+        condition: service_healthy
+
+  #####
+  # Mainnet
+  #####
+
+  # Safe Transaction Service
+  mainnet-txs-db:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-db
+
+  mainnet-txs-redis:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-redis
+
+  mainnet-txs-rabbitmq:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-rabbitmq
+
+  mainnet-txs-worker-indexer:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-worker-indexer
+    environment:
+      - ETHEREUM_NODE_URL=${MAINNET_RPC_NODE_URL}
+    depends_on:
+      mainnet-txs-db:
+        condition: service_healthy
+      mainnet-txs-redis:
+        condition: service_healthy
+
+  mainnet-txs-worker-contracts-tokens:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-worker-contracts-tokens
+    environment:
+      - ETHEREUM_NODE_URL=${MAINNET_RPC_NODE_URL}
+    depends_on:
+      mainnet-txs-worker-indexer:
+        condition: service_healthy
+
+  mainnet-txs-worker-notifications-webhooks:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-worker-notifications-webhooks
+    environment:
+      - ETHEREUM_NODE_URL=${MAINNET_RPC_NODE_URL}
+    depends_on:
+      mainnet-txs-worker-indexer:
+        condition: service_healthy
+
+  mainnet-txs-web:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-web
+    volumes:
+      - mainnet-nginx-shared-txs:/nginx
+    environment:
+      - ETHEREUM_NODE_URL=${MAINNET_RPC_NODE_URL}
+    depends_on:
+      mainnet-txs-worker-indexer:
+        condition: service_healthy
+
+  mainnet-txs-scheduler:
+    extends:
+      file: docker-compose.common-services.yml
+      service: txs-scheduler
+    depends_on:
+      mainnet-txs-db:
+        condition: service_healthy
+      mainnet-txs-redis:
+        condition: service_healthy
+
+  #####
+  # Common
+  #####
+
+  # Safe Config Service
+  cfg-db:
+    extends:
+      file: docker-compose.common-services.yml
+      service: cfg-db
+
+  cfg-web:
+    extends:
+      file: docker-compose.common-services.yml
+      service: cfg-web
+    depends_on:
+      cfg-db:
+        condition: service_healthy
+
+  # Safe Client Gateway
+  cgw-redis:
+    extends:
+      file: docker-compose.common-services.yml
+      service: cgw-redis
+
+  cgw-web:
+    extends:
+      file: docker-compose.common-services.yml
+      service: cgw-web
+    depends_on:
+      cgw-redis:
+        condition: service_healthy
+
+  ui:
+    extends:
+      file: docker-compose.common-services.yml
+      service: ui
+    depends_on:
+      - nginx
+
+  general-rabbitmq:
+    extends:
+      file: docker-compose.common-services.yml
+      service: general-rabbitmq
+
+  events-db:
+    extends:
+      file: docker-compose.common-services.yml
+      service: events-db
+
+  events-web:
+    extends:
+      file: docker-compose.common-services.yml
+      service: events-web
+    depends_on:
+      events-db:
+        condition: service_healthy
+      general-rabbitmq:
+        condition: service_healthy
