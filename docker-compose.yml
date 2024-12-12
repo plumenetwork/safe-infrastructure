@@ -205,17 +205,18 @@ services:
       service: cgw-redis
 
   cgw-web:
-    extends:
-      file: docker-compose.services.yml
-      service: cgw-web
-    depends_on:
-      cgw-redis:
-        condition: service_healthy
+    image: alex-local-cgw
+    env_file:
+      - container_env_files/cgw.env
+    environment:
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_SECRET=${JWT_SECRET}
+      - AUTH_TOKEN=${AUTH_TOKEN}
 
   ui:
-    extends:
-      file: docker-compose.services.yml
-      service: ui
+    image: alex-local-web
+    env_file:
+      - container_env_files/ui.env
     depends_on:
       - nginx
 
