@@ -41,12 +41,6 @@ services:
 
   txs-db:
     image: postgres:14-alpine
-    ports:
-      - target: 5432
-        published: 5433
-        host_ip: 0.0.0.0
-        protocol: tcp
-        mode: host
     command: -c 'max_connections=250'
     environment:
       POSTGRES_PASSWORD: postgres
@@ -89,7 +83,6 @@ services:
     env_file:
       - container_env_files/txs.env
     environment:
-      - ETHEREUM_NODE_URL=${RPC_NODE_URL}
       - RUN_MIGRATIONS=1
       - WORKER_QUEUES=default,indexing
     command: docker/web/celery/worker/run.sh
@@ -99,20 +92,17 @@ services:
     <<: *txs-worker
     environment:
       - WORKER_QUEUES=contracts,tokens
-      - ETHEREUM_NODE_URL=${RPC_NODE_URL}
 
   txs-worker-notifications-webhooks:
     <<: *txs-worker
     environment:
       - WORKER_QUEUES=notifications,webhooks
-      - ETHEREUM_NODE_URL=${RPC_NODE_URL}
 
   txs-web:
     image: safeglobal/safe-transaction-service:${TXS_VERSION}
     env_file:
       - container_env_files/txs.env
     environment:
-      - ETHEREUM_NODE_URL=${RPC_NODE_URL}
     working_dir: /app
     volumes:
       - nginx-shared-txs:/nginx
@@ -120,19 +110,12 @@ services:
 
   txs-scheduler:
     <<: *txs-worker
-    depends_on:
-      txs-db:
-        condition: service_healthy
-      txs-redis:
-        condition: service_healthy
     command: docker/web/celery/scheduler/run.sh
 
   # Safe Config Service
   cfg-web:
     image: safeglobal/safe-config-service:${CFG_VERSION}
     tty: true
-    volumes:
-      - nginx-shared-cfg:/nginx
     env_file:
       - container_env_files/cfg.env
     environment:
